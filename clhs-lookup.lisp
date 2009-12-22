@@ -4,10 +4,8 @@
 (in-package :clhs-lookup)
 
 (defparameter *hyperspec-pathname*
-  (merge-pathnames
-   (make-pathname :directory '(:relative "HyperSpec"))
-   (user-homedir-pathname)))
-
+  #P"/usr/share/doc/hyperspec-7.0/HyperSpec/")
+  
 (defparameter *hyperspec-map-file*
   (merge-pathnames "Data/Map_Sym.txt" *hyperspec-pathname*))
 
