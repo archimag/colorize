@@ -209,7 +209,8 @@
          (current-position 0)
          (*scan-calls* 0))
     (flet ((finish-current (new-position new-mode new-wait &key (extend t) push pop)
-             (let ((to (if extend new-position current-position)))
+             (let ((to (min (if extend new-position current-position)
+                            (length string))))
                (if (> to low-bound)
                    (setf result (nconc result
                                        (list (cons (cons current-mode mode-stack)
