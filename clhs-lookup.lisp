@@ -51,6 +51,18 @@
           (setf *last-warn-time* (get-universal-time)))
         (return-from populate-table nil))
       (flet ((set-symbol (sym url)
+               (if (char= (elt sym 0) #\&)
+                   (setf sym (concatenate 'string "&AMP;" (subseq sym 1))))
+               (let ((lt-pos (position #\< sym))
+                     (gt-pos (position #\> sym)))
+                 (if lt-pos
+                     (setf sym (concatenate 'string (subseq sym 0 lt-pos) 
+                                                    "&LT;"
+                                                    (subseq sym (1+ lt-pos)))))
+                 (if gt-pos
+                     (setf sym (concatenate 'string (subseq sym 0 gt-pos) 
+                                                    "&GT;"
+                                                    (subseq sym (1+ gt-pos))))))
                (setf (gethash sym *symbol-table*) url)
                (let ((abbrev (abbrev:abbrev sym)))
                  (and abbrev
