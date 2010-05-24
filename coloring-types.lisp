@@ -6,7 +6,7 @@
   (defparameter *version-token* (gensym)))
 
 (defparameter *symbol-characters*
-  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ*!%$&+-1234567890")
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ*!%$&+-1234567890<=>")
 
 (defparameter *non-constituent*
   '(#\space #\tab #\newline #\linefeed #\page #\return
