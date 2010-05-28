@@ -3,31 +3,30 @@
                                                       :spec-lookup))
 (in-package :clhs-lookup)
 
-(defparameter *hyperspec-pathname*
-  #P"/usr/share/doc/hyperspec-7.0/HyperSpec/")
-  
-(defparameter *hyperspec-map-file*
-  (merge-pathnames "Data/Map_Sym.txt" *hyperspec-pathname*))
+;; aux
 
-(defparameter *hyperspec-root* "http://www.lispworks.com/reference/HyperSpec/")
+(defmacro defmulti (defname &rest bindings)
+  `(progn ,@(loop for (name val . tl) on bindings by #'cddr
+                  collect `(,defname ,name ,val))))
 
-;;; AMOP.
-(defparameter *mop-map-file*
-  (merge-pathnames "Mop_Sym.txt" #.*compile-file-pathname*))
+(defmacro defvars (&rest bindings)
+  `(defmulti defvar ,@bindings))
 
-(defparameter *mop-root* "http://www.alu.org/mop/")
-
-(defvar *symbol-table* (make-hash-table :test 'equalp))
-
-(defvar *abbrev-table* (make-hash-table :test 'equalp))
-
-(defvar *section-table* (make-hash-table :test 'equalp))
-
-(defvar *format-table* (make-hash-table :test 'equalp))
-
-(defvar *read-macro-table* (make-hash-table :test 'equalp))
-
-(defvar *populated-p* nil)
+;; vars
+           
+(defvars *hyperspec-root*      "http://www.lispworks.com/reference/HyperSpec/"
+         *hyperspec-pathname*  #P"/usr/share/doc/hyperspec-7.0/HyperSpec/"
+         *hyperspec-map-file*  (merge-pathnames "Map_Sym.txt" *hyperspec-pathname*)
+         *hyperspec-dump-file* (merge-pathnames "clhs-tables.lisp-expr" #.*compile-file-pathname*)         
+         *mop-map-file*        (merge-pathnames "Mop_Sym.txt" #.*compile-file-pathname*)
+         *mop-root*            "http://www.alu.org/mop/"
+         *symbol-table*        (make-hash-table :test 'equalp)
+         *abbrev-table*        (make-hash-table :test 'equalp)
+         *section-table*       (make-hash-table :test 'equalp)
+         *format-table*        (make-hash-table :test 'equalp)
+         *read-macro-table*    (make-hash-table :test 'equalp)         
+         *populated-p*         nil
+         *last-warn-time*      0)
                                                    
 (defun add-clhs-section-to-table (&rest numbers)
   (let ((key (format nil "~{~d~^.~}" numbers))
@@ -37,9 +36,7 @@
 (defun valid-target (&rest numbers)
   (probe-file (format nil "Body/~2,'0d_~(~{~36r~}~).htm" (car numbers) (mapcar #'(lambda (x) (+ x 9)) (cdr numbers)))))
 
-(defvar *last-warn-time* 0)
-
-(defun populate-table ()
+(defun build-tables ()
   (unless *populated-p*
     ;; Hyperspec
     (with-open-file (s *hyperspec-map-file* :if-does-not-exist nil)
@@ -49,7 +46,7 @@
         (when (> (- (get-universal-time) *last-warn-time*) 10)
           (format *trace-output* "Warning: could not find hyperspec map file. Adjust the path at the top of clhs-lookup.lisp to get links to the HyperSpec.~%")
           (setf *last-warn-time* (get-universal-time)))
-        (return-from populate-table nil))
+        (return-from build-tables nil))
       (flet ((set-symbol (sym url)
                (if (char= (elt sym 0) #\&)
                    (setf sym (concatenate 'string "&AMP;" (subseq sym 1))))
@@ -126,7 +123,7 @@
                                     ((#\/) "Body/22_ced.htm")
                                     ((#\t #\T) "Body/22_cfa.htm")
                                     ;; FIXME
-                                    ((#\<) "Body/22_cfb.htm")
+                                    ;((#\<) "Body/22_cfb.htm")
                                     ((#\>) "Body/22_cfc.htm")
                                     ((#\*) "Body/22_cga.htm")
                                     ((#\[) "Body/22_cgb.htm")
@@ -142,7 +139,8 @@
                                     ((#\Newline) "Body/22_cic.htm")
                                     (t "Body/22_c.htm")))))
       ;; read macros
-      (loop for (char page) in '((#\( "a")
+      (loop for (char page) in 
+               '((#\( "a")
 				 (#\) "b")
 				 (#\' "c")
 				 (#\; "d")
@@ -150,50 +148,66 @@
 				 (#\` "f")
 				 (#\, "g")
 				 (#\# "h"))
-	    do (setf (gethash (format nil "~A" char) *read-macro-table*)
-		     (concatenate 'string
-				  *hyperspec-root*
-				  "Body/02_d"
-				  page
-				  ".htm")))
+	         do (setf (gethash (format nil "~A" char) *read-macro-table*)
+		              (concatenate 'string
+				                   *hyperspec-root*
+                                   "Body/02_d"
+                                   page
+                                   ".htm")))
       (loop for code from 32 to 127
             do (setf (gethash (format nil "#~A" (code-char code)) *read-macro-table*)
                      (concatenate 'string
                                   *hyperspec-root*
-				  "Body/02_dh"
+                                  "Body/02_dh"
                                   (case (code-char code)
-				    ((#\\) "a")
-				    ((#\') "b")
-				    ((#\() "c")
-				    ((#\*) "d")
-				    ((#\:) "e")
-				    ((#\.) "f")
-				    ((#\b #\B) "g")
-				    ((#\o #\O) "h")
-				    ((#\x #\X) "i")
-				    ((#\r #\R) "j")
-				    ((#\c #\C) "k")
-				    ((#\a #\A) "l")
-				    ((#\s #\S) "m")
-				    ((#\p #\P) "n")
-				    ((#\=) "o")
-				    ((#\#) "p")
-				    ((#\+) "q")
-				    ((#\-) "r")
-				    ((#\|) "s")
-				    ((#\<) "t")
-				    ((#\)) "v")
+                                    ((#\\) "a")
+                                    ((#\') "b")
+                                    ((#\() "c")
+                                    ((#\*) "d")
+                                    ((#\:) "e")
+                                    ((#\.) "f")
+                                    ((#\b #\B) "g")
+                                    ((#\o #\O) "h")
+                                    ((#\x #\X) "i")
+                                    ((#\r #\R) "j")
+                                    ((#\c #\C) "k")
+                                    ((#\a #\A) "l")
+                                    ((#\s #\S) "m")
+                                    ((#\p #\P) "n")
+                                    ((#\=) "o")
+                                    ((#\#) "p")
+                                    ((#\+) "q")
+                                    ((#\-) "r")
+                                    ((#\|) "s")
+                                    ((#\<) "t")
+                                    ((#\)) "v")
                                     (t ""))
-				  ".htm")))
-      ;; glossary.
-      )
+                                  ".htm"))))
     ;; MOP
     (with-open-file (s *mop-map-file*)
       (do ((symbol-name (read-line s nil s) (read-line s nil s))
            (url (read-line s nil s) (read-line s nil s)))
           ((eq url s) 'done)
-        (setf (gethash (concatenate 'string "MOP:" symbol-name) *symbol-table*) (concatenate 'string *mop-root* url))))
-    (setf *populated-p* t)))
+        (setf (gethash (concatenate 'string "MOP:" symbol-name) *symbol-table*) (concatenate 'string *mop-root* url))))        
+    (setf *populated-p* t)
+    (dump-tables)))
+    
+(defun load-tables ()
+  (with-open-file (i-stream *hyperspec-dump-file* :direction :input)
+    (loop for table in (list *symbol-table* *abbrev-table* *section-table* 
+                             *format-table* *read-macro-table*)
+           do (loop for (key . val) in (read i-stream)
+                     do (setf (gethash key table) val))))
+  (setf *populated-p* t))
+
+(defun dump-tables ()
+  (with-open-file (o-stream *hyperspec-dump-file* :direction :output)
+    (loop for table in (list *symbol-table* *abbrev-table* *section-table* 
+                             *format-table* *read-macro-table*)
+           do (print (loop for key being the hash-keys in table
+                                   using (hash-value val)
+                           collect (cons key val))
+                     o-stream))))
 
 (defun abbrev-lookup (term)
   (let ((abbrevs (gethash term *abbrev-table* nil)))
@@ -205,6 +219,11 @@
                     (gethash (car abbrevs) *symbol-table*))
             (format nil "Matches: ~{~A~^ ~}"
                     abbrevs)))))
+              
+(defun populate-table ()
+  (if (probe-file *hyperspec-dump-file*)
+      (load-tables)
+      (build-tables)))
 
 (defun spec-lookup (term &key (type :all))
   (unless *populated-p*
@@ -214,7 +233,7 @@
      (or (gethash term *symbol-table*)
          (gethash term *section-table*)
          (gethash term *format-table*)
-	 (gethash term *read-macro-table*)
+         (gethash term *read-macro-table*)
          (abbrev-lookup term)))
     (:abbrev
      (abbrev-lookup term))
