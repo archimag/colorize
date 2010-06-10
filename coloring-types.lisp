@@ -1080,7 +1080,7 @@ class=\"keyword\">~A</span>"
 	 (scan "t.")
 	 (scan "e."))
      (set-mode :variable
-	       :until (advance 1)
+	       :until (scan-any *refal-terminators*)
 	       :advancing nil))
     ((scan-any *refal-begin-word*)
      (set-mode :word-ish
