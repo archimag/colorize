@@ -1172,7 +1172,9 @@ class=\"keyword\">~A</span>"
 (defvar *perl-close-parens* ")]}")
 
 (defvar *perl-reserved-words*
-  '("my" "our" "use" "sub" "print"))
+  '("my" "our" "use" "sub" "print" "no" "split" "chomp" "join"
+    "map" "grep" "sort" "for" "while" "if" "unless" "do" "else" "elsif"
+    "bless" "open" "close" "return" "or" "and"))
 
 (defparameter *perl-begin-word* "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789")
 (defparameter *perl-terminators* '(#\space #\return #\tab #\newline #\. #\' #\" #\# #\, #\& #\= #\( #\) #\[ #\] #\{ #\} #\< #\> #\; #\- #\+ #\* #\/))
