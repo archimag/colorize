@@ -1,0 +1,78 @@
+;; lang/diff.lisp
+
+(in-package :colorize)
+
+(define-coloring-type :diff "Unified Context Diff"
+  :default-mode :first-char-on-line
+  :transitions
+  (((:first-char-on-line :normal :index :index-file :git-index :git-index-file :git-diff)
+    ((scan #\newline)
+     (set-mode :first-char-on-line)))
+   ((:first-char-on-line)
+    ((scan "@@")
+     (set-mode :range-information
+	       :until (scan "@@")))
+    ((scan "===")
+     (set-mode :separator
+	       :until (scan #\newline)))
+    ((scan "--- ")
+     (set-mode :file-from
+	       :until (scan #\newline)))
+    ((scan "+++ ")
+     (set-mode :file-to
+	       :until (scan #\newline)))
+    ((scan "diff --git ")
+     (set-mode :git-diff
+	       :until (scan #\newline)))
+    ((scan "index ")
+     (set-mode :git-index))
+    ((scan "Index: ")
+     (set-mode :index))
+    ((scan #\-)
+     (set-mode :diff-deleted
+	       :until (scan #\newline)))
+    ((scan #\+)
+     (set-mode :diff-added
+	       :until (scan #\newline))) 
+    ((advance 1)
+     (set-mode :normal)))
+   ((:git-diff)
+    ((scan "a/")
+     (set-mode :git-index-file))
+    ((scan "b/")
+     (set-mode :git-index-file)))
+   ((:git-index-file)
+    ((scan #\space)
+     (set-mode :git-diff)))
+   ((:index)
+    ((advance 1)
+     (set-mode :index-file))))
+  :formatters
+  (((:normal :first-char-on-line)
+    (lambda (type s)
+      (declare (ignore type))
+      (format nil "<span class=\"diff-normal\">~A</span>" s)))
+   ((:separator :file-from :file-to)
+    (lambda (type s)
+      (declare (ignore type))
+      (format nil "<span class=\"string\">~A</span>" s)))
+   ((:range-information)
+    (lambda (type s)
+      (declare (ignore type))
+      (format nil "<span class=\"variable\">~A</span>" s)))
+   ((:diff-added)
+    (lambda (type s)
+      (declare (ignore type))
+      (format nil "<span class=\"diff-added\">~A</span>" s)))
+   ((:diff-deleted)
+    (lambda (type s)
+      (declare (ignore type))
+      (format nil "<span class=\"diff-deleted\">~A</span>" s)))
+   ((:index :git-index :git-diff)
+    (lambda (type s)
+      (declare (ignore type))
+      (format nil "<span class=\"variable\">~A</span>" s)))
+   ((:index-file :git-index-file)
+    (lambda (type s)
+      (declare (ignore type))
+      (format nil "<span class=\"symbol\">~A</span>" s)))))

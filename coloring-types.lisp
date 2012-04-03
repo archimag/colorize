@@ -6,7 +6,7 @@
   (defparameter *version-token* (gensym)))
 
 (defparameter *symbol-characters*
-  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ*!%$&+-1234567890")
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ*!%$&+-1234567890<=>")
 
 (defparameter *non-constituent*
   '(#\space #\tab #\newline #\linefeed #\page #\return
@@ -26,6 +26,7 @@
 
 (define-coloring-type :lisp "Basic Lisp"
   :default-mode :first-char-on-line
+  :invisible t
   :transitions
   (((:in-list)
     ((or
@@ -473,542 +474,9 @@
 			s))))
 	(setf is-keyword (not is-keyword))))))))
 
-
-(defvar *erlang-open-parens* "([{")
-(defvar *erlang-close-parens* ")]}")
-
-(defvar *erlang-reserved-words*
-  '("after" "andalso" "begin" "catch" "case" "end" "fun" "if" "of" "orelse"
-    "receive" "try" "when" "query" "is_atom" "is_binary" "is_constant"
-    "is_float" "is_function" "is_integer" "is_list" "is_number" "is_pid"
-    "is_port" "is_reference" "is_tuple" "is_record" "abs" "element" "float"
-    "hd" "tl" "length" "node" "round" "self" "size" "trunc" "alive" "apply"
-    "atom_to_list" "binary_to_list" "binary_to_term" "concat_binary"
-    "date" "disconnect_node" "erase" "exit" "float_to_list" "garbage_collect"
-    "get" "get_keys" "group_leader" "halt" "integer_to_list" "internal_bif"
-    "link" "list_to_atom" "list_to_binary" "list_to_float" "list_to_integer"
-    "make_ref" "node_link" "node_unlink" "notalive" "open_port" "pid_to_list"
-    "process_flag" "process_info" "processes" "put" "register" "registered"
-    "setelement" "spawn" "spawn_link" "split_binary" "statistics"
-    "term_to_binary" "time" "throw" "trace" "trunc" "tuple_to_list"
-    "unlink" "unregister" "whereis"))
-
-(defparameter *erlang-begin-word* "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789")
-(defparameter *erlang-begin-fun* "abcdefghijklmnopqrstuvwxyz")
-(defparameter *erlang-begin-var* "ABCDEFGHIJKLMNOPQRSTUVWXYZ_")
-(defparameter *erlang-terminators* '(#\space #\return #\tab #\newline #\. #\; #\, #\/ #\- #\* #\+ #\( #\) #\' #\" #\[ #\] #\< #\> #\{ #\}))
-
-(define-coloring-type :erlang "Erlang"
-  :default-mode :first-char-on-line
-  :transitions
-  (((:normal :paren-ish)
-    ((scan "%")
-     (set-mode :comment
-               :until (scan #\newline)))
-    ((scan-any *erlang-begin-var*)
-     (set-mode :variable
-               :until (scan-any *erlang-terminators*)
-               :advancing nil))
-    ((scan-any *erlang-begin-word*)
-     (set-mode :word-ish
-               :until (scan-any *erlang-terminators*)
-               :advancing nil))
-    ((or
-      (scan-any *erlang-open-parens*)
-      (scan-any *erlang-close-parens*))
-     (set-mode :paren-ish
-               :until (advance 1)
-               :advancing nil))
-    ((scan #\")
-     (set-mode :string
-               :until (scan #\")))
-    ((scan #\')
-     (set-mode :atom
-               :until (scan #\')))
-    ((scan #\?)
-     (set-mode :macro
-               :until (scan-any *erlang-terminators*)))
-    ((scan #\$)
-     (set-mode :char
-               :until (scan-any *erlang-terminators*)))
-    ((scan #\newline)
-     (set-mode :first-char-on-line)))
-   
-   ((:function :attribute)
-    ((or
-      (scan-any *erlang-open-parens*)
-      (scan-any *erlang-close-parens*))
-     (set-mode :paren-ish
-               :until (advance 1)
-               :advancing nil))
-    ((scan-any *erlang-terminators*)
-     (set-mode :normal
-               :until (scan #\newline))))
-   
-   (:first-char-on-line
-    ((scan "%")
-     (set-mode :comment
-               :until (scan #\newline)))
-    ((scan-any *erlang-begin-fun*)
-     (set-mode :function
-               :until (scan #\newline)
-               :advancing nil))
-    ((scan "-")
-     (set-mode :attribute
-               :until (scan #\newline)
-               :advancing nil))
-    ((advance 1)
-     (set-mode :normal
-               :until (scan #\newline))))
-   (:string
-    ((scan #\\)
-     (set-mode :single-escape
-               :until (advance 1)))))
-  :formatter-variables
-  ((paren-counter 0))
-  :formatter-after-hook (lambda nil
-                          (format nil "~{~A~}"
-                                  (loop for i from paren-counter downto 1
-                                        collect "</span></span>")))
-  :formatters
-  (((:normal :first-char-on-line)
-    (lambda (type s)
-      (declare (ignore type))
-      s))
-   (:comment
-    (lambda (type s)
-      (declare (ignore type))
-      (format nil "<span class=\"comment\">~A</span>"
-              s)))
-   (:string
-    (lambda (type s)
-      (declare (ignore type))
-      (format nil "<span class=\"string\">~A</span>"
-              s)))
-   (:variable
-    (lambda (type s)
-      (declare (ignore type))
-      (format nil "<span class=\"variable\">~A</span>"
-              s)))
-   (:function
-    (lambda (type s)
-      (declare (ignore type))
-      (format nil "<span class=\"function\">~A</span>"
-              s)))
-   (:attribute
-    (lambda (type s)
-      (declare (ignore type))
-      (format nil "<span class=\"attribute\">~A</span>"
-              s)))
-   (:macro
-    (lambda (type s)
-      (declare (ignore type))
-      (format nil "<span class=\"macro\">~A</span>"
-              s)))
-   (:atom
-    (lambda (type s)
-      (declare (ignore type))
-      (format nil "<span class=\"atom\">~A</span>"
-              s)))
-   (:char
-    (lambda (type s)
-      (declare (ignore type))
-      (format nil "<span class=\"character\">~A</span>"
-              s)))
-   (:single-escape
-    (lambda (type s)
-      (call-formatter (cdr type) s)))
-   (:paren-ish
-    (lambda (type s)
-      (declare (ignore type))
-      (let ((open nil)
-            (count 0))
-        (if (eql (length s) 1)
-            (progn
-              (when (member (elt s 0) (coerce *erlang-open-parens* 'list))
-                (setf open t)
-                (setf count (mod paren-counter 6))
-                (incf paren-counter))
-              (when (member (elt s 0) (coerce *erlang-close-parens* 'list))
-                (setf open nil)
-                (decf paren-counter)
-                (setf count (mod paren-counter 6)))
-              (if open
-                  (format nil "<span class=\"paren~A\">~A<span class=\"~A\">"
-                          (1+ count) s *css-background-class*)
-                  (format nil "</span>~A</span>"
-                          s)))
-            s))))
-   (:word-ish
-    (lambda (type s)
-      (declare (ignore type))
-      (if (member s *erlang-reserved-words* :test #'string=)
-          (format nil "<span class=\"symbol\">~A</span>" s)
-          s)))
-   ))
-
-(defvar *python-reserved-words*
-  '("and"       "assert"        "break"         "class"         "continue"
-    "def"       "del"           "elif"          "else"          "except"
-    "exec"      "finally"       "for"           "from"          "global"
-    "if"        "import"        "in"            "is"            "lambda"
-    "not"       "or"            "pass"          "print"         "raise"
-    "return"    "try"           "while"         "yield"))
-
-(define-coloring-type :python "Python"
-  :default-mode :normal
-  :transitions
-  ((:normal
-    ((scan-any *c-begin-word*)
-     (set-mode :word-ish
-               :until (scan-any *c-terminators*)
-               :advancing nil))
-    ((or
-      (scan-any *c-open-parens*)
-      (scan-any *c-close-parens*))
-     (set-mode :paren-ish
-               :until (advance 1)
-               :advancing nil)) 
-    ((scan #\#)
-     (set-mode :comment
-	       :until (scan-any '(#\return #\newline))))
-    ((scan #\")
-     (set-mode :string
-               :until (scan #\")))
-    ((scan "\"\"\"")
-     (set-mode :string
-	       :until (scan "\"\"\"")))
-    ((scan "'''")
-     (set-mode :string
-	       :until (scan "'''")))
-    ((scan #\')
-     (set-mode :string
-	       :until (scan #\')))
-    ((scan "@")
-     (set-mode :decorator
-	       :until (scan-any *non-constituent*)
-	       :advancing nil))
-    ((scan "def")
-     (set-mode :def
-	       :until (scan-any '(#\: #\())
-	       :advancing nil))
-    ((scan "class")
-     (set-mode :def
-	       :until (scan-any '(#\: #\())
-	       :advancing nil)))
-   (:string
-    ((scan #\\)
-     (set-mode :single-escape
-               :until (advance 1)))))
-  :formatter-variables ((paren-counter 0))
-  :formatters
-  ((:normal
-    (lambda (type s)
-      (declare (ignore type))
-      s))
-   (:comment
-    (lambda (type s)
-      (declare (ignore type))
-      (format nil "<span class=\"comment\">~A</span>"
-              s)))
-   (:string
-    (lambda (type s)
-      (declare (ignore type))
-      (format nil "<span class=\"string\">~A</span>"
-              s)))
-   (:character
-    (lambda (type s)
-      (declare (ignore type))
-      (format nil "<span class=\"character\">~A</span>"
-              s)))
-   (:single-escape
-    (lambda (type s)
-      (call-formatter (cdr type) s)))
-   (:paren-ish
-    (lambda (type s)
-      (declare (ignore type))
-      (let ((open nil)
-            (count 0))
-        (if (eql (length s) 1)
-            (progn
-              (when (member (elt s 0) (coerce *c-open-parens* 'list))
-                (setf open t)
-                (setf count (mod paren-counter 6))
-                (incf paren-counter))
-              (when (member (elt s 0) (coerce *c-close-parens* 'list))
-                (setf open nil)
-                (decf paren-counter)
-                (setf count (mod paren-counter 6)))
-              (if open
-                  (format nil "<span class=\"paren~A\">~A<span class=\"~A\">"
-                          (1+ count) s *css-background-class*)
-                  (format nil "</span>~A</span>"
-                          s)))
-            s))))
-   (:def
-       (lambda (type s)
-	 (declare (ignore type))
-	 (format nil "<span class=\"special\">~A</span><span
-class=\"keyword\">~A</span>"
-		 (subseq s 0 (position #\Space s))
-		 (subseq s (position #\Space s)))))
-   (:decorator
-    (lambda (type s)
-      (declare (ignore type))
-      (format nil "<span class=\"symbol\">~A</span>" s)))
-   (:word-ish
-    (lambda (type s)
-      (declare (ignore type))
-      (if (member s *python-reserved-words* :test #'string=)
-	  (format nil "<span class=\"symbol\">~A</span>"
-		  s)
-	  s)))))
-
-(defvar *haskell-open-parens* "([{")
-
-(defvar *haskell-close-parens* ")]}")
-
-(defvar *haskell-in-word*
-  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789")
-
-(defvar *haskell-begin-id* "abcdefghijklmnopqrstuvwxyz")
-
-(defvar *haskell-begin-cons* "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-(defvar *haskell-in-symbol* "!#$%&*+./<=>?@\\^|-~:")
-
-(defvar *haskell-reserved-symbols*
-  '(".." "::" "@" "~" "=" "-&gt;" "&lt;-" "|" "\\"))
-
-(defvar *haskell-reserved-words*
-  '("case" "class" "data" "default" "deriving" "do" "else" "if"
-    "import" "in" "infix" "infixl" "infixr" "instance" "let" "module"
-    "newtype" "of" "then" "type" "where"))
-
-(defvar *haskell-non-constituent*
-  '(#\space #\return #\tab #\newline #\{ #\} #\( #\) #\" #\[ #\]))
-
-(define-coloring-type :haskell "Haskell"
-  :default-mode :normal
-  :transitions
-  (((:normal)
-    ((scan-any *haskell-in-word*)
-     (set-mode :identifier
-	       :until (or (scan-any *haskell-non-constituent*)
-			  (scan-any *haskell-in-symbol*))
-	       :advancing nil))
-    ((scan "--")
-     (set-mode :comment
-	       :until (scan-any '(#\return #\newline))
-	       :advancing nil))
-    ((scan "{-")
-     (set-mode :multi-comment
-	       :until (scan "-}")))
-    ((scan #\")
-     (set-mode :string
-	       :until (scan #\")))
-    ((scan #\`)
-     (set-mode :backquote
-	       :until (scan #\`)))
-    ((scan "'")
-     (set-mode :char
-	       :until (scan #\')))
-    ((scan-any *haskell-in-symbol*)
-     (set-mode :symbol
-	       :until (or (scan-any *haskell-non-constituent*)
-			  (scan-any *haskell-in-word*)
-			  (scan #\'))
-	       :advancing nil))
-    ((or (scan-any *haskell-open-parens*)
-	 (scan-any *haskell-close-parens*))
-     (set-mode :parenlike
-	       :until (advance 1)
-	       :advancing nil))
-    ((scan #\newline)
-     (set-mode :newline
-	       :until (advance 1)
-	       :advancing nil)))
-   ((:string)
-    ((scan #\\)
-     (set-mode :single-escape
-               :until (advance 1))))
-   ((:char)
-    ((scan #\\)
-     (set-mode :single-escape
-               :until (advance 1)))))
-  :formatter-variables
-  ((paren-counter 0)
-   (beginning-of-line t))
-  :formatter-after-hook (lambda nil
-			  (format nil "~{~A~}"
-				  (loop for i from paren-counter downto 1
-                                     collect "</span></span>")))
-  :formatters
-  (((:normal)
-    (lambda (type s)
-      (declare (ignore type))
-      (cond (beginning-of-line
-	     (setq beginning-of-line nil)
-	     (if (char= (elt s 0) #\space)
-		 (concatenate 'string "&nbsp;" (subseq s 1))
-                 s))
-	    (t s))))
-   ((:newline)
-    (lambda (type s)
-      (declare (ignore type))
-      (setq beginning-of-line t)
-      s))
-   ((:backquote)
-    (lambda (type s)
-      (declare (ignore type))
-      (setq beginning-of-line nil)
-      (if (find (elt s 1) *haskell-begin-cons*)
-	  (format nil "<span class=\"variable\">~A</span>"
-		  s)
-          (format nil "<span class=\"atom\">~A</span>"
-                  s))))
-   ((:comment :multi-comment)
-    (lambda (type s)
-      (declare (ignore type))
-      (setq beginning-of-line nil)
-      (format nil "<span class=\"comment\">~A</span>"
-	      s)))
-   ((:string)
-    (lambda (type s)
-      (declare (ignore type))
-      (setq beginning-of-line nil)
-      (format nil "<span class=\"string\">~A</span>"
-	      s)))
-   ((:char)
-    (lambda (type s)
-      (declare (ignore type))
-      (setq beginning-of-line nil)
-      (format nil "<span class=\"character\">~A</span>"
-	      s)))
-   ((:identifier)
-    (lambda (type s)
-      (declare (ignore type))
-      (prog1
-	  (cond ((find (elt s 0) *haskell-begin-cons*)
-		 (format nil "<span class=\"variable\">~A</span>" s))
-		((member s *haskell-reserved-words* :test #'string=)
-		 (format nil "<span class=\"keyword\">~A</span>" s))
-		(beginning-of-line
-		 (format nil "<span class=\"function\">~A</span>" s))
-		(t s))
-	(setq beginning-of-line nil))))
-   ((:symbol)
-    (lambda (type s)
-      (declare (ignore type))
-      (setq beginning-of-line nil)
-      (cond ((member s *haskell-reserved-symbols* :test #'string=)
-	     (format nil "<span class=\"keyword\">~A</span>" s))
-	    ((char= (elt s 0) #\:)
-	     (format nil "<span class=\"variable\">~A</span>" s))
-	    (t (format nil "<span class=\"atom\">~A</span>" s)))))
-   ((:single-escape)
-    (lambda (type s)
-      (call-formatter (cdr type) s)))
-   ((:parenlike)
-    (lambda (type s)
-      (declare (ignore type))
-      (setq beginning-of-line nil)
-      (let ((open nil)
-            (count 0))
-        (if (eql (length s) 1)
-            (progn
-              (when (find (elt s 0) *haskell-open-parens*)
-                (setf open t)
-                (setf count (mod paren-counter 6))
-                (incf paren-counter))
-              (when (find (elt s 0) *haskell-close-parens*)
-                (setf open nil)
-                (decf paren-counter)
-                (setf count (mod paren-counter 6)))
-              (if open
-                  (format nil "<span class=\"paren~A\">~A<span class=\"~A\">"
-                          (1+ count) s *css-background-class*)
-                  (format nil "</span>~A</span>"
-                          s)))
-            s))))))
-
-(define-coloring-type :diff "Unified Context Diff"
-  :default-mode :first-char-on-line
-  :transitions
-  (((:first-char-on-line :normal :index :index-file :git-index :git-index-file :git-diff)
-    ((scan #\newline)
-     (set-mode :first-char-on-line)))
-   ((:first-char-on-line)
-    ((scan "@@")
-     (set-mode :range-information
-	       :until (scan "@@")))
-    ((scan "===")
-     (set-mode :separator
-	       :until (scan #\newline)))
-    ((scan "--- ")
-     (set-mode :file-from
-	       :until (scan #\newline)))
-    ((scan "+++ ")
-     (set-mode :file-to
-	       :until (scan #\newline)))
-    ((scan "diff --git ")
-     (set-mode :git-diff
-	       :until (scan #\newline)))
-    ((scan "index ")
-     (set-mode :git-index))
-    ((scan "Index: ")
-     (set-mode :index))
-    ((scan #\-)
-     (set-mode :diff-deleted
-	       :until (scan #\newline)))
-    ((scan #\+)
-     (set-mode :diff-added
-	       :until (scan #\newline))) 
-    ((advance 1)
-     (set-mode :normal)))
-   ((:git-diff)
-    ((scan "a/")
-     (set-mode :git-index-file))
-    ((scan "b/")
-     (set-mode :git-index-file)))
-   ((:git-index-file)
-    ((scan #\space)
-     (set-mode :git-diff)))
-   ((:index)
-    ((advance 1)
-     (set-mode :index-file))))
-  :formatters
-  (((:normal :first-char-on-line)
-    (lambda (type s)
-      (declare (ignore type))
-      (format nil "<span class=\"diff-normal\">~A</span>" s)))
-   ((:separator :file-from :file-to)
-    (lambda (type s)
-      (declare (ignore type))
-      (format nil "<span class=\"string\">~A</span>" s)))
-   ((:range-information)
-    (lambda (type s)
-      (declare (ignore type))
-      (format nil "<span class=\"variable\">~A</span>" s)))
-   ((:diff-added)
-    (lambda (type s)
-      (declare (ignore type))
-      (format nil "<span class=\"diff-added\">~A</span>" s)))
-   ((:diff-deleted)
-    (lambda (type s)
-      (declare (ignore type))
-      (format nil "<span class=\"diff-deleted\">~A</span>" s)))
-   ((:index :git-index :git-diff)
-    (lambda (type s)
-      (declare (ignore type))
-      (format nil "<span class=\"variable\">~A</span>" s)))
-   ((:index-file :git-index-file)
-    (lambda (type s)
-      (declare (ignore type))
-      (format nil "<span class=\"symbol\">~A</span>" s)))))
-
+#+nil
 (defparameter *numbers* "0123456789")
-
+#+nil
 (define-coloring-type :webkit "WebKit (text or diff)"
   :parent :diff
   :transitions
