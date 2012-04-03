@@ -1177,7 +1177,7 @@ class=\"keyword\">~A</span>"
     "bless" "open" "close" "return" "or" "and"))
 
 (defparameter *perl-begin-word* "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789")
-(defparameter *perl-terminators* '(#\space #\return #\tab #\newline #\. #\' #\" #\# #\, #\& #\= #\( #\) #\[ #\] #\{ #\} #\< #\> #\; #\- #\+ #\* #\/))
+(defparameter *perl-terminators* '(#\space #\return #\tab #\newline #\. #\' #\" #\# #\, #\& #\= #\( #\) #\[ #\] #\{ #\} #\< #\> #\; #\- #\+ #\* #\/ #\\))
 
 (define-coloring-type :perl "Perl"
   :default-mode :normal
