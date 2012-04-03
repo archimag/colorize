@@ -23,7 +23,11 @@
                  (:file "elisp-lookup")
                  (:file "coloring-types"
                         :depends-on ("colorize" "clhs-lookup"))
-                 (:file "lang/php"
-                        :depends-on ("colorize"))
-                 (:file "lang/perl"
-                        :depends-on ("colorize"))))
+                 (:file "lang/php" :depends-on ("colorize"))
+                 (:file "lang/perl" :depends-on ("colorize"))
+                 (:file "lang/diff" :depends-on ("colorize"))
+                 (:file "lang/erlang" :depends-on ("colorize"))
+                 (:file "lang/haskell" :depends-on ("colorize"))
+                 (:file "lang/python" :depends-on ("colorize"))
+                 (:file "lang/refal" :depends-on ("colorize"))
+                 (:file "lang/sh" :depends-on ("colorize"))))
