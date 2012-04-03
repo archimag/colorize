@@ -2,9 +2,6 @@
 
 (in-package :colorize)
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defparameter *version-token* (gensym)))
-
 (defvar *perl-open-parens* "([{")
 (defvar *perl-close-parens* ")]}")
 

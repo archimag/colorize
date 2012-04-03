@@ -2,9 +2,6 @@
 
 (in-package :colorize)
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defparameter *version-token* (gensym)))
-
 (defvar *php-open-parens* "([{")
 (defvar *php-close-parens* ")]}")
 (defvar *php-open-tags* '("<?php" "<?"))
