@@ -25,7 +25,7 @@
 (defparameter *close-parens* '(#\)))
 
 (define-coloring-type :lisp "Basic Lisp"
-  :default-mode :first-char-on-line 
+  :default-mode :first-char-on-line
   :invisible t
   :transitions
   (((:in-list)

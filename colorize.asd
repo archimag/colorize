@@ -23,7 +23,7 @@
                  (:file "elisp-lookup")
                  (:file "coloring-types"
                         :depends-on ("colorize" "clhs-lookup"))
-                 (:file "lang/perl"
-                        :depends-on ("colorize" "clhs-lookup" "coloring-types"))
                  (:file "lang/php"
-                        :depends-on ("colorize" "clhs-lookup" "coloring-types"))))
+                        :depends-on ("colorize"))
+                 (:file "lang/perl"
+                        :depends-on ("colorize"))))
