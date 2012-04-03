@@ -22,4 +22,8 @@
                  (:file "r5rs-lookup")
                  (:file "elisp-lookup")
                  (:file "coloring-types"
-                        :depends-on ("colorize" "clhs-lookup"))))
+                        :depends-on ("colorize" "clhs-lookup"))
+                 (:file "lang/perl"
+                        :depends-on ("colorize" "clhs-lookup" "coloring-types"))
+                 (:file "lang/php"
+                        :depends-on ("colorize" "clhs-lookup" "coloring-types"))))
