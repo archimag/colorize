@@ -33,7 +33,7 @@
 (defparameter *php-begin-word* "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_")
 (defparameter *php-terminators* '(#\space #\return #\tab #\newline #\. #\' #\" #\# #\, #\& #\= #\( #\) #\[ #\] #\{ #\} #\< #\> #\; #\- #\+ #\* #\/ #\\ #\:))
 
-(define-coloring-type :php "Php"
+(define-coloring-type :php "PHP"
   :default-mode :normal
   :transitions
   ((:normal
